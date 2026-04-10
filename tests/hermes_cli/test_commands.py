@@ -63,6 +63,16 @@ class TestCommandRegistry:
                     assert resolve_command(alias).name == cmd.name or alias == cmd.name, \
                         f"Alias '{alias}' of '{cmd.name}' shadows canonical '{target.name}'"
 
+    def test_no_alias_collides_with_another_alias(self):
+        """Two different commands must not reuse the same alias."""
+        alias_to_command = {}
+        for cmd in COMMAND_REGISTRY:
+            for alias in cmd.aliases:
+                existing = alias_to_command.get(alias)
+                assert existing in (None, cmd.name), \
+                    f"Alias '{alias}' is shared by '{existing}' and '{cmd.name}'"
+                alias_to_command[alias] = cmd.name
+
     def test_every_entry_has_valid_category(self):
         valid_categories = {"Session", "Configuration", "Tools & Skills", "Info", "Exit"}
         for cmd in COMMAND_REGISTRY:
@@ -98,6 +108,7 @@ class TestResolveCommand:
         assert resolve_command("bg").name == "background"
         assert resolve_command("reset").name == "new"
         assert resolve_command("q").name == "quit"
+        assert resolve_command("next").name == "queue"
         assert resolve_command("exit").name == "quit"
         assert resolve_command("gateway").name == "platforms"
         assert resolve_command("set-home").name == "sethome"
@@ -134,6 +145,7 @@ class TestDerivedDicts:
         assert "/bg" in COMMANDS
         assert "/reset" in COMMANDS
         assert "/q" in COMMANDS
+        assert "/next" in COMMANDS
         assert "/exit" in COMMANDS
         assert "/reload_mcp" in COMMANDS
         assert "/gateway" in COMMANDS

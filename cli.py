@@ -1433,7 +1433,7 @@ def _build_compact_banner() -> str:
 def _looks_like_slash_command(text: str) -> bool:
     """Return True if *text* looks like a slash command, not a file path.
 
-    Slash commands are ``/help``, ``/model gpt-4``, ``/q``, etc.
+    Slash commands are ``/help``, ``/model gpt-4``, ``/quit``, etc.
     File paths like ``/Users/ironin/file.md:45-46 can you fix this?``
     also start with ``/`` but contain additional ``/`` characters in
     the first whitespace-delimited word.  This helper distinguishes
@@ -1810,6 +1810,7 @@ class HermesCLI:
         self._tool_start_time: float = 0.0  # monotonic timestamp when current tool started (for live elapsed)
         self._command_running = False
         self._command_status = ""
+        self._command_display = ""
         self._attached_images: list[Path] = []
         self._image_counter = 0
         self.preloaded_skills: list[str] = []
@@ -2628,10 +2629,11 @@ class HermesCLI:
         return _COMMAND_SPINNER_FRAMES[frame_idx]
 
     @contextmanager
-    def _busy_command(self, status: str):
+    def _busy_command(self, command: str, status: str):
         """Expose a temporary busy state in the TUI while a slash command runs."""
         self._command_running = True
         self._command_status = status
+        self._command_display = command.strip()
         self._invalidate(min_interval=0.0)
         try:
             print(f"⏳ {status}")
@@ -2639,6 +2641,7 @@ class HermesCLI:
         finally:
             self._command_running = False
             self._command_status = ""
+            self._command_display = ""
             self._invalidate(min_interval=0.0)
 
     def _ensure_runtime_credentials(self) -> bool:
@@ -5041,7 +5044,7 @@ class HermesCLI:
         elif canonical == "cron":
             self._handle_cron_command(cmd_original)
         elif canonical == "skills":
-            with self._busy_command(self._slow_command_status(cmd_original)):
+            with self._busy_command(cmd_original, self._slow_command_status(cmd_original)):
                 self._handle_skills_command(cmd_original)
         elif canonical == "platforms":
             self._show_gateway_status()
@@ -5070,7 +5073,7 @@ class HermesCLI:
         elif canonical == "image":
             self._handle_image_command(cmd_original)
         elif canonical == "reload-mcp":
-            with self._busy_command(self._slow_command_status(cmd_original)):
+            with self._busy_command(cmd_original, self._slow_command_status(cmd_original)):
                 self._reload_mcp()
         elif canonical == "browser":
             self._handle_browser_command(cmd_original)
@@ -5104,7 +5107,7 @@ class HermesCLI:
         elif canonical == "btw":
             self._handle_btw_command(cmd_original)
         elif canonical == "queue":
-            # Extract prompt after "/queue " or "/q "
+            # Extract prompt after "/queue " or one of its aliases
             parts = cmd_original.split(None, 1)
             payload = parts[1].strip() if len(parts) > 1 else ""
             if not payload:
@@ -7783,6 +7786,7 @@ class HermesCLI:
         # Slash command loading state
         self._command_running = False
         self._command_status = ""
+        self._command_display = ""
 
         # Secure secret capture state for skill setup
         self._secret_state = None       # dict with var_name, prompt, metadata, response_queue
@@ -8410,6 +8414,9 @@ class HermesCLI:
             if cli_ref._command_running:
                 frame = cli_ref._command_spinner_frame()
                 status = cli_ref._command_status or "Processing command..."
+                display = (cli_ref._command_display or "").strip()
+                if display:
+                    return f"{frame} {display} — {status}"
                 return f"{frame} {status}"
             if cli_ref._agent_running:
                 return "type a message + Enter to interrupt, Ctrl+C to cancel"

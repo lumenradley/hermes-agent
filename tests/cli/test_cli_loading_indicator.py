@@ -12,6 +12,7 @@ class TestCLILoadingIndicator:
         cli_obj._last_invalidate = 0.0
         cli_obj._command_running = False
         cli_obj._command_status = ""
+        cli_obj._command_display = ""
         return cli_obj
 
     def test_skills_command_sets_busy_state_and_prints_status(self, capsys):
@@ -38,6 +39,7 @@ class TestCLILoadingIndicator:
         }
         assert cli_obj._command_running is False
         assert cli_obj._command_status == ""
+        assert cli_obj._command_display == ""
         assert invalidate_mock.call_count == 2
 
     def test_reload_mcp_sets_busy_state_and_prints_status(self, capsys):
@@ -62,4 +64,5 @@ class TestCLILoadingIndicator:
         }
         assert cli_obj._command_running is False
         assert cli_obj._command_status == ""
+        assert cli_obj._command_display == ""
         assert invalidate_mock.call_count == 2

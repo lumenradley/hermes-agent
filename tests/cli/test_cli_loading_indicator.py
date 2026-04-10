@@ -42,6 +42,21 @@ class TestCLILoadingIndicator:
         assert cli_obj._command_display == ""
         assert invalidate_mock.call_count == 2
 
+    def test_busy_command_skips_extra_prints_inside_tui(self, capsys):
+        cli_obj = self._make_cli()
+        cli_obj._app = object()
+
+        with patch.object(cli_obj, "_invalidate") as invalidate_mock:
+            with cli_obj._busy_command("/reload-mcp", "Reloading MCP servers..."):
+                pass
+
+        output = capsys.readouterr().out
+        assert output == ""
+        assert cli_obj._command_running is False
+        assert cli_obj._command_status == ""
+        assert cli_obj._command_display == ""
+        assert invalidate_mock.call_count == 2
+
     def test_reload_mcp_sets_busy_state_and_prints_status(self, capsys):
         cli_obj = self._make_cli()
         seen = {}

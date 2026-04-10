@@ -23,6 +23,7 @@ import tempfile
 import time
 import uuid
 import textwrap
+import shlex
 from contextlib import contextmanager
 from pathlib import Path
 from datetime import datetime
@@ -47,6 +48,7 @@ from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.widgets import TextArea
 from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.enums import EditingMode
 from prompt_toolkit import print_formatted_text as _pt_print
 from prompt_toolkit.formatted_text import ANSI as _PT_ANSI
 try:
@@ -2628,6 +2630,18 @@ class HermesCLI:
         frame_idx = int(_time.monotonic() * 10) % len(_COMMAND_SPINNER_FRAMES)
         return _COMMAND_SPINNER_FRAMES[frame_idx]
 
+    def _preferred_editing_mode(self) -> EditingMode:
+        """Pick a prompt_toolkit editing mode that matches the user's editor habits."""
+        editor_value = os.environ.get("VISUAL") or os.environ.get("EDITOR") or ""
+        try:
+            first_token = shlex.split(editor_value)[0] if editor_value else ""
+        except ValueError:
+            first_token = editor_value.strip().split()[0] if editor_value.strip() else ""
+        editor_name = Path(first_token).name.lower()
+        if editor_name in {"vi", "vim", "nvim", "view", "vimdiff", "gvim"}:
+            return EditingMode.VI
+        return EditingMode.EMACS
+
     @contextmanager
     def _busy_command(self, command: str, status: str):
         """Expose a temporary busy state in the TUI while a slash command runs."""
@@ -2636,7 +2650,8 @@ class HermesCLI:
         self._command_display = command.strip()
         self._invalidate(min_interval=0.0)
         try:
-            print(f"⏳ {status}")
+            if not getattr(self, "_app", None):
+                print(f"⏳ {status}")
             yield
         finally:
             self._command_running = False
@@ -6804,9 +6819,6 @@ class HermesCLI:
                 if now - _last_countdown_refresh >= 5.0:
                     _last_countdown_refresh = now
                     self._invalidate()
-                if now - _last_countdown_refresh >= 5.0:
-                    _last_countdown_refresh = now
-                    self._invalidate()
 
         # Timed out — tear down the UI and let the agent decide
         self._clarify_state = None
@@ -8870,6 +8882,7 @@ class HermesCLI:
             style=style,
             full_screen=False,
             mouse_support=False,
+            editing_mode=self._preferred_editing_mode(),
             **({'cursor': _STEADY_CURSOR} if _STEADY_CURSOR is not None else {}),
         )
         self._app = app  # Store reference for clarify_callback

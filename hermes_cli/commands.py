@@ -83,6 +83,8 @@ COMMAND_REGISTRY: list[CommandDef] = [
                args_hint="<question>"),
     CommandDef("queue", "Queue a prompt for the next turn (doesn't interrupt)", "Session",
                aliases=("next",), args_hint="<prompt>"),
+    CommandDef("edit", "Open the current draft in $VISUAL/$EDITOR (falls back to vi)", "Session",
+               cli_only=True, aliases=("vi",)),
     CommandDef("status", "Show session info", "Session"),
     CommandDef("profile", "Show active profile name and home directory", "Info"),
     CommandDef("sethome", "Set this chat as the home channel", "Session",

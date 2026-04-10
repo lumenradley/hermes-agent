@@ -2644,6 +2644,25 @@ class HermesCLI:
             self._command_display = ""
             self._invalidate(min_interval=0.0)
 
+    def _open_external_editor(self) -> bool:
+        """Open the active input buffer in an external editor."""
+        app = getattr(self, "_app", None)
+        if not app:
+            _cprint(f"{_DIM}External editor is only available inside the interactive CLI.{_RST}")
+            return False
+        if self._command_running:
+            _cprint(f"{_DIM}Wait for the current command to finish before opening the editor.{_RST}")
+            return False
+        if self._sudo_state or self._secret_state or self._approval_state or self._clarify_state:
+            _cprint(f"{_DIM}Finish the active prompt before opening the editor.{_RST}")
+            return False
+        try:
+            app.current_buffer.open_in_editor(validate_and_handle=False)
+            return True
+        except Exception as exc:
+            _cprint(f"{_DIM}Failed to open external editor: {exc}{_RST}")
+            return False
+
     def _ensure_runtime_credentials(self) -> bool:
         """
         Ensure runtime credentials are resolved before agent use.
@@ -5050,6 +5069,8 @@ class HermesCLI:
             self._show_gateway_status()
         elif canonical == "status":
             self._show_session_status()
+        elif canonical == "edit":
+            self._open_external_editor()
         elif canonical == "statusbar":
             self._status_bar_visible = not self._status_bar_visible
             state = "visible" if self._status_bar_visible else "hidden"
@@ -7932,6 +7953,11 @@ class HermesCLI:
         def handle_ctrl_enter(event):
             """Ctrl+Enter (c-j) inserts a newline. Most terminals send c-j for Ctrl+Enter."""
             event.current_buffer.insert_text('\n')
+
+        @kb.add('c-x', 'c-e', filter=_normal_input)
+        def handle_open_in_editor(event):
+            """Ctrl+X Ctrl+E opens the current draft in an external editor."""
+            cli_ref._open_external_editor()
 
         @kb.add('tab', eager=True)
         def handle_tab(event):

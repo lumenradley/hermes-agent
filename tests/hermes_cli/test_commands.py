@@ -109,6 +109,7 @@ class TestResolveCommand:
         assert resolve_command("reset").name == "new"
         assert resolve_command("q").name == "quit"
         assert resolve_command("next").name == "queue"
+        assert resolve_command("vi").name == "edit"
         assert resolve_command("exit").name == "quit"
         assert resolve_command("gateway").name == "platforms"
         assert resolve_command("set-home").name == "sethome"
@@ -146,6 +147,8 @@ class TestDerivedDicts:
         assert "/reset" in COMMANDS
         assert "/q" in COMMANDS
         assert "/next" in COMMANDS
+        assert "/edit" in COMMANDS
+        assert "/vi" in COMMANDS
         assert "/exit" in COMMANDS
         assert "/reload_mcp" in COMMANDS
         assert "/gateway" in COMMANDS

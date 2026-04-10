@@ -6764,6 +6764,7 @@ class HermesCLI:
         response_queue = queue.Queue()
         is_open_ended = not choices
 
+        self._capture_modal_input_snapshot()
         self._clarify_state = {
             "question": question,
             "choices": choices if not is_open_ended else [],
@@ -6791,6 +6792,8 @@ class HermesCLI:
             try:
                 result = response_queue.get(timeout=1)
                 self._clarify_deadline = 0
+                self._restore_modal_input_snapshot()
+                self._invalidate()
                 return result
             except queue.Empty:
                 remaining = self._clarify_deadline - _time.monotonic()
@@ -6809,6 +6812,7 @@ class HermesCLI:
         self._clarify_state = None
         self._clarify_freetext = False
         self._clarify_deadline = 0
+        self._restore_modal_input_snapshot()
         self._invalidate()
         _cprint(f"\n{_DIM}(clarify timed out after {timeout}s — agent will decide){_RST}")
         return (
@@ -6883,6 +6887,7 @@ class HermesCLI:
             timeout = 60
             response_queue = queue.Queue()
 
+            self._capture_modal_input_snapshot()
             self._approval_state = {
                 "command": command,
                 "description": description,
@@ -6900,6 +6905,7 @@ class HermesCLI:
                     result = response_queue.get(timeout=1)
                     self._approval_state = None
                     self._approval_deadline = 0
+                    self._restore_modal_input_snapshot()
                     self._invalidate()
                     return result
                 except queue.Empty:
@@ -6913,6 +6919,7 @@ class HermesCLI:
 
             self._approval_state = None
             self._approval_deadline = 0
+            self._restore_modal_input_snapshot()
             self._invalidate()
             _cprint(f"\n{_DIM}  ⏱ Timeout — denying command{_RST}")
             return "deny"

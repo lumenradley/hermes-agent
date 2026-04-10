@@ -102,6 +102,12 @@ def prompt_for_secret(cli, var_name: str, prompt: str, metadata=None) -> dict:
     timeout = 120
     response_queue = queue.Queue()
 
+    if hasattr(cli, "_capture_modal_input_snapshot"):
+        try:
+            cli._capture_modal_input_snapshot()
+        except Exception:
+            pass
+
     cli._secret_state = {
         "var_name": var_name,
         "prompt": prompt,
@@ -129,6 +135,11 @@ def prompt_for_secret(cli, var_name: str, prompt: str, metadata=None) -> dict:
             value = response_queue.get(timeout=1)
             cli._secret_state = None
             cli._secret_deadline = 0
+            if hasattr(cli, "_restore_modal_input_snapshot"):
+                try:
+                    cli._restore_modal_input_snapshot()
+                except Exception:
+                    pass
             if hasattr(cli, "_app") and cli._app:
                 cli._app.invalidate()
 
@@ -160,7 +171,12 @@ def prompt_for_secret(cli, var_name: str, prompt: str, metadata=None) -> dict:
 
     cli._secret_state = None
     cli._secret_deadline = 0
-    if hasattr(cli, "_clear_secret_input_buffer"):
+    if hasattr(cli, "_restore_modal_input_snapshot"):
+        try:
+            cli._restore_modal_input_snapshot()
+        except Exception:
+            pass
+    elif hasattr(cli, "_clear_secret_input_buffer"):
         try:
             cli._clear_secret_input_buffer()
         except Exception:

@@ -7973,7 +7973,12 @@ class HermesCLI:
             """Ctrl+Enter (c-j) inserts a newline. Most terminals send c-j for Ctrl+Enter."""
             event.current_buffer.insert_text('\n')
 
-        @kb.add('c-x', 'c-e', filter=_normal_input)
+        @kb.add(
+            'c-x', 'c-e',
+            filter=Condition(
+                lambda: not self._clarify_state and not self._approval_state and not self._sudo_state and not self._secret_state
+            ),
+        )
         def handle_open_in_editor(event):
             """Ctrl+X Ctrl+E opens the current draft in an external editor."""
             cli_ref._open_external_editor()
